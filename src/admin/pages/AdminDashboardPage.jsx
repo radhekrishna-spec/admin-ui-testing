@@ -5,7 +5,7 @@ import Pagination from '../components/Pagination';
 import QuickPreview from '../components/QuickPreview';
 import SearchBar from '../components/SearchBar';
 
-export default function AdminDashboardPage() {
+export default function AdminDashboardPage({ collegeId }) {
   const [confessions, setConfessions] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [search, setSearch] = useState('');
@@ -13,20 +13,32 @@ export default function AdminDashboardPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetch('https://m-backend-4t8v.onrender.com/api/admin/confessions')
+    fetch(
+      `https://testing-confe-backend.onrender.com/api/admin/confessions/${collegeId}`,
+    )
       .then((res) => res.json())
-      .then((data) => setConfessions(data))
-      .catch((err) => console.error(err));
-  }, []);
+      .then((data) => {
+        setConfessions(Array.isArray(data.data) ? data.data : []);
+      })
+      .catch((err) => {
+        console.error(err);
+        setConfessions([]);
+      });
+  }, [collegeId]);
 
   const filteredData = useMemo(() => {
-    return confessions.filter(
-      (item) =>
+    return confessions.filter((item) => {
+      const matchesCollege =
+        !collegeId || item.collegeId?.toLowerCase() === collegeId.toLowerCase();
+
+      const matchesSearch =
         item.nickname?.toLowerCase().includes(search.toLowerCase()) ||
         item.message?.toLowerCase().includes(search.toLowerCase()) ||
-        String(item.confessionNo).includes(search),
-    );
-  }, [confessions, search]);
+        String(item.confessionNo).includes(search);
+
+      return matchesCollege && matchesSearch;
+    });
+  }, [confessions, search, collegeId]);
 
   const itemsPerPage = 10;
   const totalPages = Math.ceil(filteredData.length / itemsPerPage);
@@ -42,8 +54,18 @@ export default function AdminDashboardPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-violet-50 to-purple-50 p-6">
+      {collegeId && (
+        <button
+          onClick={() => navigate('/admin')}
+          className="mb-4 px-4 py-2 rounded-xl border border-violet-200"
+        >
+          ← Back
+        </button>
+      )}
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-violet-700">Admin Dashboard</h1>
+        <h1 className="text-2xl font-bold text-violet-700">
+          {collegeId?.toUpperCase()} Admin Dashboard
+        </h1>
 
         <div className="flex gap-3">
           <button
